@@ -3,10 +3,10 @@ var plugin_data = {
     icon: 'crop_square',
     title: 'Outline Creator',
     description: 'Creates stylistic outlines for cubes using negative scale values.',
-    about: 'To use the plugin, select an element you want to create an outline for, go to the Filter tab and click on the Create Outline option.',
+    about: 'To use the plugin, select an element you want to create an outline for, go to the Filter menu and click on the Create Outline option.',
     author: 'Wither',
-    version: '0.0.1',
-    min_version: '2.0.2',
+    version: '1.0.0',
+    min_version: '2.1.0',
     variant: 'both'
 }
 
@@ -33,11 +33,14 @@ MenuBar.addAction(new Action({
 
 function createOutline() {
     var outline_thickness = parseFloat($('#outline_thickness')[0].value);
+    Undo.initEdit({cubes: Blockbench.elements, outliner: true});
     selected.forEach(element => {
         var outline = new Cube({
             name: `${element.name}_outline`, 
             from:[element.to[0] + outline_thickness, element.to[1] + outline_thickness, element.to[2] + outline_thickness], 
             to:[element.from[0] - outline_thickness, element.from[1] - outline_thickness, element.from[2] - outline_thickness],
+            rotation: element.rotation,
+            origin: element.origin,
             faces: {
                 north: {
                     uv: element.faces.south.uv,
@@ -76,10 +79,11 @@ function createOutline() {
                     cullface: element.faces.up.cullface
                 }
             }
-        }).addTo()
+        }).addTo();
         Blockbench.elements.push(outline);
     });
     Canvas.updateAll();
+    Undo.finishEdit('Created outlines');
 }
 
 var outlineSettings = new Dialog({
@@ -90,11 +94,11 @@ var outlineSettings = new Dialog({
         '<br>&nbsp;'
     ],
     onConfirm: function() {
-        createOutline()
         outlineSettings.hide();
+        createOutline();
     }
 });
 
 onUninstall = function() {
-    MenuBar.removeAction('filter.create_outline')
+    MenuBar.removeAction('filter.create_outline');
 }
