@@ -1,39 +1,48 @@
-var plugin_data = {
-    id: 'outline_creator',
+var createOutlineAction;
+
+Plugin.register('outline_creator', {
     icon: 'crop_square',
     title: 'Outline Creator',
     description: 'Creates stylistic outlines for cubes using negative scale values.',
     about: 'To use the plugin, select an element you want to create an outline for, go to the Filter menu and click on the Create Outline option.',
     author: 'Wither',
-    version: '1.0.0',
-    min_version: '2.1.0',
-    variant: 'both'
-}
+    version: '1.0.2',
+    min_version: '3.0.0',
+    variant: 'both',
 
-MenuBar.addAction(new Action({
-    id: 'create_outline',
-    name: 'Create Outline',
-    icon: 'crop_square',
-    description: 'Create an outline for selected cubes',
-    click: function(ev) {
-        if(selected.length != 0) {
-            outlineSettings.show();
-        }
-        else {
-            Blockbench.showMessageBox({
-                title: 'Error!',
-                icon: 'error',
-                message: 'You must select at least one cube!',
-                buttons: ['OK']
-    
-            });
-        }
+    onload() {
+        createOutlineAction = new Action({
+            id: 'create_outline',
+            name: 'Create Outline',
+            icon: 'crop_square',
+            description: 'Create an outline for selected cubes',
+            click: function(ev) {
+                if(selected.length != 0) {
+                    outlineSettings.show();
+                }
+                else {
+                    Blockbench.showMessageBox({
+                        title: 'Error!',
+                        icon: 'error',
+                        message: 'You must select at least one cube!',
+                        buttons: ['OK']
+            
+                    });
+                }
+            }
+        });
+        MenuBar.addAction(createOutlineAction, 'filter');
+    },
+    onunload() {
+        this.onuninstall();
+    },
+    onuninstall() {
+        createOutlineAction.delete();
     }
-}), 'filter')
+})
 
-function createOutline() {
-    var outline_thickness = parseFloat($('#outline_thickness')[0].value);
-    Undo.initEdit({cubes: Blockbench.elements, outliner: true});
+function createOutline(outline_thickness) {
+    Undo.initEdit({elements: Outliner.elements, outliner: true});
     selected.forEach(element => {
         var outline = new Cube({
             name: `${element.name}_outline`, 
@@ -79,26 +88,19 @@ function createOutline() {
                     cullface: element.faces.up.cullface
                 }
             }
-        }).addTo();
-        Blockbench.elements.push(outline);
+        }).init();
     });
-    Canvas.updateAll();
     Undo.finishEdit('Created outlines');
 }
 
 var outlineSettings = new Dialog({
     title: 'Outline Settings',
     id: 'outline_settings',
-    lines: [
-        'Thickness: <input type="number" id="outline_thickness" style="background-color:var(--color-back)" value="0.1">',
-        '<br>&nbsp;'
-    ],
-    onConfirm: function() {
+    form: {
+        thickness: {label: 'Thickness', type: 'number', value: 0.1, min: 0, step: 0.1}
+    },
+    onConfirm: function(formResult) {
         outlineSettings.hide();
-        createOutline();
+        createOutline(formResult.thickness);
     }
 });
-
-onUninstall = function() {
-    MenuBar.removeAction('filter.create_outline');
-}
